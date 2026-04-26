@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lock Choices</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <div class="logo">National Admission Portal</div>
+    <nav>
+        <a href="/profile/dashboard.html">Dashboard</a>
+        <a href="/profile/choicefilling.html">Choice Filling</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</header>
+<section class="section">
+    <div class="card">
+        <h2>Review Your Choices</h2>
+        <p>Please confirm your preferences before locking. Once locked, you cannot change them.</p>
+        <table id="reviewTable">
+            <thead>
+                <tr><th>Priority</th><th>Institute</th><th>Program</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div style="margin-top: 30px; text-align: center;">
+            <button id="lockBtn" class="btn">Confirm & Lock Choices</button>
+            <a href="/profile/choicefilling.html" class="btn btn-secondary">Go Back</a>
+        </div>
+    </div>
+</section>
+<footer>© 2026 National Admission Portal</footer>
+<script>
+    const choices = JSON.parse(sessionStorage.getItem("choices"));
+    if (!choices || choices.length === 0) {
+        alert("No choices found. Please fill choices first.");
+        window.location.href = "/profile/choicefilling.html";
+    }
+    const tbody = document.querySelector("#reviewTable tbody");
+    choices.sort((a, b) => a.priority - b.priority);
+    choices.forEach(choice => {
+        const row = tbody.insertRow();
+        row.insertCell(0).innerText = choice.priority;
+    });
+    async function loadDetails() {
+        const institutesRes = await fetch("/api/institutes");
+        const programsRes = await fetch("/api/programs");
+        const institutes = await institutesRes.json();
+        const programs = await programsRes.json();
+        const tbody = document.querySelector("#reviewTable tbody");
+        tbody.innerHTML = "";
+        for (let choice of choices) {
+            const inst = institutes.find(i => i.id == choice.institute_id);
+            const prog = programs.find(p => p.id == choice.program_id);
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = choice.priority;
+            row.insertCell(1).innerText = inst ? inst.institute_name : "Unknown";
+            row.insertCell(2).innerText = prog ? prog.program_name : "Unknown";
+        }
+    }
+    loadDetails();
+
+    document.getElementById("lockBtn").addEventListener("click", async () => {
+        const choicesToSubmit = choices.map(c => ({
+            institute_id: parseInt(c.institute_id),
+            program_id: parseInt(c.program_id),
+            priority: c.priority
+        }));
+
+        try {
+            const response = await fetch("/api/submitchoices", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ choices: choicesToSubmit })
+            });
+            const data = await response.json();
+            if (data.success) {
+                sessionStorage.removeItem("choices");
+                window.location.href = "/profile/choicesuccess.html";
+            } else {
+                alert("Error locking choices: " + (data.message || "Unknown error"));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong. Please try again.");
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Programs Offered | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo">National Admission Portal</div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/institutes.html">Institutes</a>
+            <a href="/seat_matrix.html">Seat Matrix</a>
+            <a href="/cutoffs.html">Cutoffs</a>
+        </nav>
+    </header>
+
+    <section class="section">
+        <div class="card">
+            <h2>Programs Offered</h2>
+            <div id="programsTable">
+                <p>Loading programs...</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>© 2026 National Admission Portal</footer>
+
+    <script>
+        fetch('/api/programs')
+            .then(res => res.json())
+            .then(programs => {
+                const container = document.getElementById('programsTable');
+                if (!programs || programs.length === 0) {
+                    container.innerHTML = '<p>No programs found.</p>';
+                    return;
+                }
+                let html = `<table>
+            <thead>
+                <tr><th>Program</th><th>Duration</th><th>Degree</th></tr>
+            </thead>
+            <tbody>`;
+                programs.forEach(prog => {
+                    html += `
+                <tr>
+                    <td>${escapeHtml(prog.program_name)}</td>
+                    <td>4 Years</td>
+                    <td>B.Tech</td>
+                </tr>`;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error fetching programs:', err);
+                document.getElementById('programsTable').innerHTML = '<p>Error loading programs. Please try again later.</p>';
+            });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function (m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+    </script>
+</body>
+
+</html>

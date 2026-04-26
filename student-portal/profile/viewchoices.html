@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>View Locked Choices</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo">National Admission Portal</div>
+        <nav>
+            <a href="/profile/dashboard.html">Dashboard</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+    <section class="section">
+        <div class="card">
+            <h2>Your Locked Choices</h2>
+            <p>Application Number: <b id="appNo"></b></p>
+            <p style="color: green;">✓ These choices are locked and cannot be modified</p>
+
+            <table class="choices-table">
+                <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Institute Name</th>
+                        <th>Program Name</th>
+                    </tr>
+                </thead>
+                <tbody id="choicesBody">
+                    <tr>
+                        <td colspan="3" style="text-align:center;">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="text-align:center; margin-top:20px;">
+                <a href="/profile/dashboard.html" class="btn">Back to Dashboard</a>
+            </div>
+        </div>
+    </section>
+    <footer>© 2026 National Admission Portal</footer>
+    <script>
+        async function loadPage() {
+            try {
+                const meRes = await fetch("/api/me");
+                if (meRes.status === 401) {
+                    alert("Please login first!");
+                    window.location.href = "/login.html";
+                    return;
+                }
+                const userData = await meRes.json();
+                if (!userData) return;
+                document.getElementById("appNo").innerText = userData.application_no;
+                const hasChoicesRes = await fetch("/api/has-choices");
+                const hasChoicesData = await hasChoicesRes.json();
+                if (!hasChoicesData.hasChoices) {
+                    document.getElementById("choicesBody").innerHTML = '<tr><td colspan="3" style="text-align:center;">⚠️ You have not submitted any choices yet. Please fill your choices first.</td></tr>';
+                    return;
+                }
+                const choicesRes = await fetch("/api/mychoices");
+                if (!choicesRes.ok) throw new Error("Failed to fetch choices");
+                const choices = await choicesRes.json();
+                const tbody = document.getElementById("choicesBody");
+                tbody.innerHTML = "";
+                if (choices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No choices found</td></tr>';
+                    return;
+                }
+                choices.sort((a, b) => a.priority - b.priority);
+                choices.forEach(choice => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = choice.priority;
+                    row.insertCell(1).innerText = choice.institute_name || "Unknown Institute";
+                    row.insertCell(2).innerText = choice.program_name || "Unknown Program";
+                });
+            } catch (err) {
+                console.error("Error:", err);
+                document.getElementById("choicesBody").innerHTML = '<tr><td colspan="3" style="text-align:center;color:red;">Error loading choices. Please try again later.</td></tr>';
+            }
+        }
+        loadPage();
+    </script>
+</body>
+</html>

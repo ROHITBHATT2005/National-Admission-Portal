@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Institute Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .status-accepted {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-rejected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        .doc-link {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .doc-link:hover {
+            text-decoration: underline;
+        }
+
+        table {
+            margin-top: 0;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">Institute Portal</div>
+        <nav><a href="/logout">Logout</a></nav>
+    </header>
+    <section class="section">
+        <div class="card">
+            <h2>Allotted Students for Your Institute</h2>
+            <table id="allottedTable">
+                <thead>
+                    <tr>
+                        <th>App No</th>
+                        <th>Student Name</th>
+                        <th>Program</th>
+                        <th>Documents</th>
+                        <th>Verification Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="5">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <script>
+        async function loadAllotted() {
+            try {
+                const res = await fetch('/api/institute/allotted');
+                if (!res.ok) throw new Error('Failed to fetch');
+                const students = await res.json();
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+                if (students.length === 0) { tbody.innerHTML = '<tr><td colspan="5">No students allotted yet.</td></tr>'; return; }
+                students.forEach(s => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).innerText = s.application_no;
+                    row.insertCell(1).innerText = s.full_name;
+                    row.insertCell(2).innerText = s.program_name;
+                    const docCell = row.insertCell(3);
+                    if (s.documents_uploaded) {
+                        const viewLink = document.createElement('a');
+                        viewLink.href = `/api/institute/documents/${s.application_no}`;
+                        viewLink.target = '_blank';
+                        viewLink.innerText = '📄 View & Verify';
+                        viewLink.className = 'doc-link';
+                        docCell.appendChild(viewLink);
+                    } else { docCell.innerText = '❌ Not Uploaded'; }
+                    const statusCell = row.insertCell(4);
+                    let statusClass = 'status-pending', statusText = s.overall_status || 'Pending';
+                    if (statusText === 'Accepted') statusClass = 'status-accepted';
+                    else if (statusText === 'Rejected') statusClass = 'status-rejected';
+                    statusCell.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+                });
+            } catch (err) { console.error(err); document.getElementById('tableBody').innerHTML = '<tr><td colspan="5">Error loading data.</td></tr>'; }
+        }
+        loadAllotted();
+    </script>
+</body>
+
+</html>

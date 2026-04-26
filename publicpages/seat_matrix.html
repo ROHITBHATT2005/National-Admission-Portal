@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seat Matrix | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <div class="logo">National Admission Portal</div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/institutes.html">Institutes</a>
+        <a href="/programs.html">Programs</a>
+        <a href="/cutoffs.html">Cutoffs</a>
+    </nav>
+</header>
+<section class="section">
+    <div class="card">
+        <h2>Seat Matrix (Category Wise)</h2>
+        <table id="seatMatrixTable">
+            <thead>
+                <tr>
+                    <th>Institute</th>
+                    <th>Program</th>
+                    <th>Total Seats</th>
+                    <th>General</th>
+                    <th>OBC</th>
+                    <th>SC</th>
+                    <th>ST</th>
+                    <th>EWS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="8">Loading seat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+<footer>© 2026 National Admission Portal</footer>
+<script>
+fetch("/api/public/seat-matrix")
+.then(res => res.json())
+.then(data => {
+    const tbody = document.querySelector("#seatMatrixTable tbody");
+    tbody.innerHTML = "";
+    data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${escapeHtml(row.institute_name)}</td>
+            <td>${escapeHtml(row.program_name)}</td>
+            <td>${row.total_seats}</td>
+            <td>${row.general_seats}</td>
+            <td>${row.obc_seats}</td>
+            <td>${row.sc_seats}</td>
+            <td>${row.st_seats}</td>
+            <td>${row.ews_seats}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+})
+.catch(err => {
+    console.error("Error fetching seat matrix:", err);
+    document.querySelector("#seatMatrixTable tbody").innerHTML = '<tr><td colspan="8">Error loading data. Please try again later.</td></tr>';
+});
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+</script>
+</body>
+</html>

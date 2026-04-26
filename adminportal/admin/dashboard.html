@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-inactive {
+            background: #f44336;
+            color: white;
+        }
+
+        .announce-box {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn-release {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-release:hover {
+            background: #f57c00;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .btn-stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #d32f2f;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">Admin Panel</div>
+        <nav><a href="/logout">Logout</a></nav>
+    </header>
+    <section class="section">
+        <div class="card">
+            <h2>Counselling Control</h2>
+            <div class="announce-box">
+                <h3>Counselling Status: <span id="counsellingStatus"></span></h3>
+                <div class="button-group">
+                    <button id="startCounsellingBtn" class="btn">Start Counselling Round</button>
+                    <button id="stopCounsellingBtn" class="btn btn-stop">Stop Counselling Round</button>
+                </div>
+                <p id="counsellingMsg" style="margin-top:10px;"></p>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Allotment Result Control</h2>
+            <div class="announce-box">
+                <h3>Allotment Result Status: <span id="announceStatus"></span></h3>
+                <button id="releaseResultBtn" class="btn btn-release">Release Allotment Result</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        async function loadStatus() {
+            try {
+                const res = await fetch('/api/admin/allotment-status');
+                const data = await res.json();
+
+                const counsellingSpan = document.getElementById('counsellingStatus');
+                const startBtn = document.getElementById('startCounsellingBtn');
+                const stopBtn = document.getElementById('stopCounsellingBtn');
+                if (data.counselling_started) {
+                    counsellingSpan.innerHTML = '<span class="status-badge status-active">Started ✓</span>';
+                    startBtn.disabled = true;
+                    startBtn.style.opacity = '0.5';
+                    stopBtn.disabled = false;
+                    stopBtn.style.opacity = '1';
+                } else {
+                    counsellingSpan.innerHTML = '<span class="status-badge status-inactive">Not Started ⏳</span>';
+                    startBtn.disabled = false;
+                    startBtn.style.opacity = '1';
+                    stopBtn.disabled = true;
+                    stopBtn.style.opacity = '0.5';
+                }
+
+                const announceSpan = document.getElementById('announceStatus');
+                const releaseBtn = document.getElementById('releaseResultBtn');
+                if (data.announced) {
+                    announceSpan.innerHTML = '<span class="status-badge status-active">Released ✓</span>';
+                    releaseBtn.innerText = 'Withdraw Allotment Result';
+                    releaseBtn.style.background = '#f44336';
+                } else {
+                    announceSpan.innerHTML = '<span class="status-badge status-inactive">Not Released ⏳</span>';
+                    releaseBtn.innerText = 'Release Allotment Result';
+                    releaseBtn.style.background = '#ff9800';
+                }
+            } catch (err) {
+                console.error("Error loading status:", err);
+            }
+        }
+
+        document.getElementById('startCounsellingBtn').addEventListener('click', async () => {
+            const res = await fetch('/api/admin/start-counselling', { method: 'POST' });
+            const result = await res.json();
+            if (result.success) {
+                alert('Counselling round started! Student login is now active.');
+                loadStatus();
+            } else {
+                alert('Failed to start counselling.');
+            }
+        });
+
+        document.getElementById('stopCounsellingBtn').addEventListener('click', async () => {
+            const res = await fetch('/api/admin/stop-counselling', { method: 'POST' });
+            const result = await res.json();
+            if (result.success) {
+                alert('Counselling round stopped. Student login is now disabled.');
+                loadStatus();
+            } else {
+                alert('Failed to stop counselling.');
+            }
+        });
+
+        document.getElementById('releaseResultBtn').addEventListener('click', async () => {
+            const statusRes = await fetch('/api/admin/allotment-status');
+            const current = await statusRes.json();
+            const newStatus = !current.announced;
+            const action = newStatus ? 'release' : 'withdraw';
+            const confirmMsg = `Are you sure you want to ${action} the allotment result?`;
+            if (!confirm(confirmMsg)) return;
+
+            const updateRes = await fetch('/api/admin/set-allotment-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ announced: newStatus })
+            });
+            if (updateRes.ok) {
+                alert(`Allotment result ${newStatus ? 'released' : 'withdrawn'} successfully.`);
+                loadStatus();
+            } else {
+                alert('Failed to update allotment result status.');
+            }
+        });
+
+        loadStatus();
+    </script>
+</body>
+
+</html>

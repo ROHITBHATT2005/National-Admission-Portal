@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Documents</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .doc-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        .doc-rejected {
+            border-left: 4px solid #f44336;
+            background: #fff3f3;
+        }
+        .doc-missing {
+            border-left: 4px solid #ff9800;
+        }
+        .error-msg {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .file-info {
+            font-size: 13px;
+            margin: 5px 0;
+        }
+        .required-star {
+            color: #f44336;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Document Upload</div>
+        <nav><a href="/profile/dashboard.html">Dashboard</a><a href="/logout">Logout</a></nav>
+    </header>
+    <section class="section">
+        <div class="card">
+            <h2>Upload Required Documents</h2>
+            <div class="info-box">📌 Please upload the documents listed below. Each file must be under
+                <strong>1MB</strong>. All fields are mandatory.
+            </div>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div id="docsContainer">Loading...</div>
+                <button type="submit" id="submitBtn" style="margin-top:20px;">Upload All Documents</button>
+            </form>
+            <div id="message"></div>
+        </div>
+    </section>
+    <script>
+        async function loadDocStatus() {
+            try{
+                const res = await fetch("/api/student/documents");
+                const docs = await res.json();
+                const container = document.getElementById("docsContainer");
+                container.innerHTML = "";
+                const requiredDocs = ["10th Marksheet", "12th Marksheet", "Aadhar Card", "Category Certificate"];
+                const docMap = {
+                    "10th Marksheet": "tenth",
+                    "12th Marksheet": "twelfth",
+                    "Category Certificate": "category",
+                    "Aadhar Card": "aadhar"
+                };
+                const statusMap = {};
+                docs.forEach(d => { statusMap[d.document_name] = d; });
+                let fieldsCount = 0;
+                for (let docName of requiredDocs) {
+                    const existing = statusMap[docName];
+                    const isMissing = !existing;
+                    const isRejected = existing && existing.verification_status === "Rejected";
+                    if (!isMissing && !isRejected) continue;
+                    fieldsCount++;
+                    const div = document.createElement("div");
+                    div.className = `doc-item ${isRejected ? 'doc-rejected' : 'doc-missing'}`;
+                    div.innerHTML = `
+                <label style="font-weight:bold;">
+                    ${docName} <span class="required-star">*</span>
+                </label>
+                <div class="file-info">${isRejected ? '❌ Rejected: ' + (existing.verification_remark || 'Please re-upload a valid document') : '⚠️ Not uploaded yet. Please upload.'}</div>
+                <input type="file" name="${docMap[docName]}" accept=".pdf,.jpg,.png" style="margin-top:8px;" required>
+                <div class="error-msg"></div>
+            `;
+                    container.appendChild(div);
+                }
+                if (fieldsCount === 0) {
+                    container.innerHTML = '<div class="success-box">✅ All documents are uploaded and pending verification. No action needed.</div>';
+                    document.getElementById("submitBtn").style.display = "none";
+                }
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => {
+                    input.addEventListener('change', function () {
+                        const errDiv = this.parentElement.querySelector('.error-msg');
+                        if (this.files[0] && this.files[0].size > 1024 * 1024) {
+                            errDiv.innerText = "File size exceeds 1MB. Please choose a smaller file.";
+                            this.value = "";
+                        } else {
+                            errDiv.innerText = "";
+                        }
+                    });
+                });
+            } catch (err) {
+                document.getElementById("docsContainer").innerHTML = '<p>Error loading document status. Please refresh.</p>';
+            }
+        }
+
+        document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            let allValid = true;
+
+            for (let input of fileInputs) {
+                if (input.files.length === 0) {
+                    alert(`Please select a file for ${input.closest('.doc-item').querySelector('label').innerText.replace('*', '').trim()}`);
+                    allValid = false;
+                    return;
+                }
+                if (input.files[0].size > 1024 * 1024) {
+                    alert(`File size exceeds 1MB for ${input.closest('.doc-item').querySelector('label').innerText.replace('*', '').trim()}`);
+                    allValid = false;
+                    return;
+                }
+                formData.append(input.name, input.files[0]);
+            }
+            if (!allValid) return;
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true;
+            btn.innerText = "Uploading...";
+            const res = await fetch('/api/student/upload-documents', { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('message').innerHTML = `<p>${data.message}</p>`;
+            if (data.success) setTimeout(() => window.location.href = '/profile/dashboard.html', 2000);
+            else btn.disabled = false;
+        });
+        loadDocStatus();
+    </script>
+</body>
+</html>

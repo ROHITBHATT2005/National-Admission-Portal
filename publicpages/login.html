@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Login | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="auth-page">
+<div class="form-container">
+    <h2>Student Login</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label>Application Number (10-digit)</label>
+            <input type="text" name="application_no" pattern="[0-9]{10}" maxlength="10" placeholder="Enter 10-digit Application Number" required>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Enter Password" required>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    <div class="back-home-btn">
+        <a href="/" class="btn btn-secondary" style="background:#666; color:white; text-decoration:none;">← Back to Home</a>
+    </div>
+</div>
+<script>
+document.getElementById("loginForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const application_no = document.querySelector("input[name='application_no']").value;
+    const password = document.querySelector("input[name='password']").value;
+    fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_no, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem("appNo", application_no);
+            window.location.href = "/profile/dashboard.html";
+        } else {
+            alert(data.message|| "Wrong application number or password entered");
+        }
+    })
+    .catch(err => {
+        console.error("Fetch error:", err);
+        alert("Something went wrong. Please try again later.");
+    });
+});
+</script>
+</body>
+</html>

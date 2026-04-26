@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Login | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body class="auth-page">
+
+    <div class="form-container">
+        <h2>Admin Portal Login</h2>
+
+        <div class="login-option">
+            <input type="radio" name="userType" id="mainAdmin" value="admin" checked>
+            <label for="mainAdmin">Main Admin</label>
+            <input type="radio" name="userType" id="instAdmin" value="institute">
+            <label for="instAdmin">Institute Admin</label>
+        </div>
+
+        <div id="adminForm" class="login-form active">
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="adminUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                <button type="submit">Login as Main Admin</button>
+            </form>
+        </div>
+
+        <div id="instForm" class="login-form">
+            <form id="instLoginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="instUsername" required placeholder="e.g., iitb_admin">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="instPassword" required>
+                </div>
+                <button type="submit">Login as Institute Admin</button>
+            </form>
+        </div>
+
+        <p id="errorMsg" style="color:#b91c1c; margin-top:12px; text-align:center; font-size:14px;"></p>
+
+        <div class="back-home-btn">
+            <a href="/" class="btn btn-secondary" style="background:#666; color:white; text-decoration:none;">← Back to
+                Home</a>
+        </div>
+    </div>
+
+    <script>
+        const mainAdminRadio = document.getElementById('mainAdmin');
+        const instAdminRadio = document.getElementById('instAdmin');
+        const adminFormDiv = document.getElementById('adminForm');
+        const instFormDiv = document.getElementById('instForm');
+
+        mainAdminRadio.addEventListener('change', () => {
+            adminFormDiv.classList.add('active');
+            instFormDiv.classList.remove('active');
+        });
+        instAdminRadio.addEventListener('change', () => {
+            instFormDiv.classList.add('active');
+            adminFormDiv.classList.remove('active');
+        });
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/admin/dashboard.html';
+            } else {
+                document.getElementById('errorMsg').innerText = data.message || 'Login failed';
+            }
+        });
+
+        document.getElementById('instLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('instUsername').value;
+            const password = document.getElementById('instPassword').value;
+            const res = await fetch('/api/institute/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/instituteadmin/dashboard.html';
+            } else {
+                document.getElementById('errorMsg').innerText = data.message || 'Login failed';
+            }
+        });
+    </script>
+</body>
+
+</html>

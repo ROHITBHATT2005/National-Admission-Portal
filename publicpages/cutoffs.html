@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cutoff Ranks | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <div class="logo">National Admission Portal</div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/institutes.html">Institutes</a>
+        <a href="/programs.html">Programs</a>
+        <a href="/seat_matrix.html">Seat Matrix</a>
+    </nav>
+</header>
+
+<section class="section">
+    <div class="card">
+        <h2>Cutoff Ranks (Category Wise)</h2>
+
+        <div class="form-group">
+            <label for="instituteSelect">Select Institute:</label>
+            <select id="instituteSelect">
+                <option value="">-- Select Institute --</option>
+            </select>
+        </div>
+
+        <table id="cutoffTable">
+            <thead>
+                <tr>
+                    <th>Program</th>
+                    <th>General</th>
+                    <th>OBC</th>
+                    <th>SC</th>
+                    <th>ST</th>
+                    <th>EWS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="6">Select an institute to view cutoffs</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<footer>© 2026 National Admission Portal</footer>
+
+<script>
+fetch("/api/institutes")
+.then(res => res.json())
+.then(data => {
+    const select = document.getElementById("instituteSelect");
+    data.forEach(inst => {
+        let option = document.createElement("option");
+        option.value = inst.id;
+        option.textContent = inst.institute_name;
+        select.appendChild(option);
+    });
+})
+.catch(err => console.log("Error fetching institutes:", err));
+
+document.getElementById("instituteSelect").addEventListener("change", function() {
+    const instId = this.value;
+    const tbody = document.querySelector("#cutoffTable tbody");
+    if (!instId) {
+        tbody.innerHTML = '<tr><td colspan="6">Select an institute to view cutoffs</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '<tr><td colspan="6">Loading cutoffs...</td></tr>';
+    
+    fetch(`/api/public/seat-matrix-by-institute?institute_id=${instId}`)
+    .then(res => res.json())
+    .then(data => {
+        tbody.innerHTML = "";
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No cutoff data available for this institute</td></tr>';
+            return;
+        }
+        data.forEach(row => {
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${escapeHtml(row.program_name)}</td>
+                <td>${row.general_cutoff || '-'}</td>
+                <td>${row.obc_cutoff || '-'}</td>
+                <td>${row.sc_cutoff || '-'}</td>
+                <td>${row.st_cutoff || '-'}</td>
+                <td>${row.ews_cutoff || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(err => {
+        console.log("Error fetching cutoffs:", err);
+        tbody.innerHTML = '<tr><td colspan="6">Error loading cutoffs</td></tr>';
+    });
+});
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+</script>
+</body>
+</html>

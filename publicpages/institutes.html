@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Participating Institutes | National Admission Portal</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <div class="logo">National Admission Portal</div>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/programs.html">Programs</a>
+        <a href="/seat_matrix.html">Seat Matrix</a>
+        <a href="/cutoffs.html">Cutoffs</a>
+    </nav>
+</header>
+
+<section class="section">
+    <div class="card">
+        <h2>Participating Institutes</h2>
+        <div id="institutesTable">
+            <p>Loading institutes...</p>
+        </div>
+    </div>
+</section>
+
+<footer>© 2026 National Admission Portal</footer>
+
+<script>
+fetch('/api/institutes')
+    .then(res => res.json())
+    .then(institutes => {
+        const container = document.getElementById('institutesTable');
+        if (!institutes || institutes.length === 0) {
+            container.innerHTML = '<p>No institutes found.</p>';
+            return;
+        }
+        let html = `<table>
+            <thead>
+                <tr><th>Institute Name</th><th>Location</th><th>Type</th></tr>
+            </thead>
+            <tbody>`;
+        institutes.forEach(inst => {
+            const location = inst.state || 'India';
+            html += `
+                <tr>
+                    <td>${escapeHtml(inst.institute_name)}</td>
+                    <td>${escapeHtml(location)}</td>
+                    <td>Government</td>
+                </tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    })
+    .catch(err => {
+        console.error('Error fetching institutes:', err);
+        document.getElementById('institutesTable').innerHTML = '<p>Error loading institutes. Please try again later.</p>';
+    });
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+</script>
+</body>
+</html>

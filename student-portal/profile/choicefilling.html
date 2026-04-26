@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Choice Filling</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">National Admission Portal</div>
+    <nav>
+        <a href="/profile/dashboard.html">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</header>
+
+<section class="section">
+    <div class="card">
+        <h2>Fill Your Choices</h2>
+        <div class="info-box">
+            <strong>Instructions:</strong>
+            <ul>
+                <li>You can add up to 5 choices.</li>
+                <li>Once locked, you cannot modify your choices.</li>
+                <li>Priority 1 is your highest preference.</li>
+            </ul>
+        </div>
+
+        <div class="form-group">
+            <label>Institute</label>
+            <select id="institute"></select>
+        </div>
+        <div class="form-group">
+            <label>Program</label>
+            <select id="program"></select>
+        </div>
+        <button onclick="addChoice()" class="btn">Add Choice</button>
+    </div>
+    <div class="card">
+        <h2>Your Choices</h2>
+        <table id="choicesTable">
+            <thead>
+                <tr><th>Priority</th><th>Institute</th><th>Program</th><th>Action</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="proceedToLock()" class="btn" style="margin-top:20px;">Proceed to Lock Choices</button>
+    </div>
+</section>
+<footer>© 2026 National Admission Portal</footer>
+<script>
+    let count = 1;
+    const maxChoices = 5;
+    let choices = [];
+    let institutes = [], programs = [];
+
+    fetch("/api/has-choices")
+        .then(res => res.json())
+        .then(data => {
+            if (data.hasChoices) {
+                alert("You have already submitted your choices. You cannot modify them.");
+                window.location.href = "/profile/dashboard.html";
+            }
+        });
+
+    function loadDropdowns() {
+        fetch("/api/institutes")
+            .then(res => res.json())
+            .then(data => {
+                institutes = data;
+                const instSelect = document.getElementById("institute");
+                instSelect.innerHTML = '<option value="">Select Institute</option>';
+                data.forEach(inst => {
+                    let opt = document.createElement("option");
+                    opt.value = inst.id;
+                    opt.text = inst.institute_name;
+                    instSelect.add(opt);
+                });
+            });
+
+        fetch("/api/programs")
+            .then(res => res.json())
+            .then(data => {
+                programs = data;
+                const progSelect = document.getElementById("program");
+                progSelect.innerHTML = '<option value="">Select Program</option>';
+                data.forEach(prog => {
+                    let opt = document.createElement("option");
+                    opt.value = prog.id;
+                    opt.text = prog.program_name;
+                    progSelect.add(opt);
+                });
+            });
+    }
+    loadDropdowns();
+
+    function addChoice() {
+        if (count > maxChoices) {
+            alert("Max 5 choices allowed.");
+            return;
+        }
+
+        const instSelect = document.getElementById("institute");
+        const progSelect = document.getElementById("program");
+        const instVal = instSelect.value;
+        const progVal = progSelect.value;
+        const instText = instSelect.options[instSelect.selectedIndex]?.text;
+        const progText = progSelect.options[progSelect.selectedIndex]?.text;
+
+        if (!instVal || !progVal) {
+            alert("Please select both institute and program.");
+            return;
+        }
+
+        if (choices.some(c => c.institute_id === instVal && c.program_id === progVal)) {
+            alert("This combination already added.");
+            return;
+        }
+
+        const tbody = document.querySelector("#choicesTable tbody");
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${count}</td>
+            <td>${instText}</td>
+            <td>${progText}</td>
+            <td><button onclick="removeRow(this)">Remove</button></td>
+        `;
+
+        choices.push({
+            institute_id: instVal,
+            program_id: progVal,
+            priority: count
+        });
+
+        count++;
+    }
+
+    function removeRow(btn) {
+        const row = btn.parentNode.parentNode;
+        const priorityToRemove = parseInt(row.cells[0].innerText);
+        choices = choices.filter(c => c.priority !== priorityToRemove);
+        row.remove();
+
+        count = 1;
+        const tbody = document.querySelector("#choicesTable tbody");
+        for (let i = 0; i < tbody.rows.length; i++) {
+            tbody.rows[i].cells[0].innerText = count;
+            choices[i].priority = count;
+            count++;
+        }
+        count = choices.length + 1;
+    }
+
+    function proceedToLock() {
+        if (choices.length === 0) {
+            alert("Add at least one choice first.");
+            return;
+        }
+        sessionStorage.setItem("choices", JSON.stringify(choices));
+        window.location.href = "/profile/choicelockpage.html";
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Seat Allotment Result</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .allotment-details {
+            background: #f0f8ff;
+            border-left: 5px solid #0a2b4e;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .congrats{
+            background: #e8f5e9;
+            border-left: 5px solid #4CAF50;
+        }
+
+        .not-allotted {
+            background: #fff3e0;
+            border-left: 5px solid #ff9800;
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            width: 200px;
+            color: #0a2b4e;
+        }
+        .detail-value {
+            color: #2c3e50;
+        }
+
+        .status-badge-large{
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .status-accepted {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-rejected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        .next-step {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">National Admission Portal</div>
+        <nav><a href="/profile/dashboard.html">Dashboard</a><a href="/logout">Logout</a></nav>
+    </header>
+    <section class="section">
+        <div class="container">
+            <div class="card">
+                <h2>Seat Allotment Result</h2>
+                <div id="loadingMsg">Loading your allotment details...</div>
+                <div id="allotmentContent" style="display:none;"></div>
+            </div>
+        </div>
+    </section>
+    <script>
+        async function loadAllotment(){
+            try{
+                const meRes = await fetch("/api/me");
+                if (meRes.status === 401) { alert("Please login first!"); window.location.href = "/login.html"; return; }
+                const user = await meRes.json();
+                const allotRes = await fetch("/api/allotment");
+                const data = await allotRes.json();
+                const container = document.getElementById("allotmentContent");
+                container.innerHTML = "";
+
+                if (!data.allotted) {
+                    const div = document.createElement("div");
+                    div.className = "allotment-details not-allotted";
+                    div.innerHTML = `
+                <h3>⚠️ No Seat Allotment in this Round</h3>
+                <div class="detail-row"><div class="detail-label">Application Number:</div><div class="detail-value">${user.application_no}</div></div>
+                <div class="detail-row"><div class="detail-label">Student Name:</div><div class="detail-value">${user.full_name}</div></div>
+                <div class="detail-row"><div class="detail-label">Your Rank:</div><div class="detail-value">${data.rank || user.student_rank}</div></div>
+                <div class="detail-row"><div class="detail-label">Your Category:</div><div class="detail-value">${data.category || user.category}</div></div>
+                <div class="next-step">
+                    <strong>What next?</strong><br>
+                    • You may be considered in the next counselling round if vacancies remain.<br>
+                    • Keep checking the portal for updates on spot rounds.<br>
+                    • Contact the helpline for any queries.
+                </div>
+            `;
+                    container.appendChild(div);
+                } else {
+                    const div = document.createElement("div");
+                    div.className = "allotment-details congrats";
+                    const status = data.verification_status || "Pending";
+                    let statusHtml = "";
+                    if (status === "Accepted") {
+                        statusHtml = '<span class="status-badge-large status-accepted">Verified ✓</span>';
+                    } else if (status === "Rejected") {
+                        statusHtml = `<span class="status-badge-large status-rejected">Rejected ✗</span><br><small>${data.verification_remark || ""}</small>`;
+                    } else {
+                        statusHtml = '<span class="status-badge-large status-pending">Pending Verification</span>';
+                    }
+                    div.innerHTML = `
+                <h3>🎉 Congratulations! You have been allotted a seat.</h3>
+                <div class="detail-row"><div class="detail-label">Application Number:</div><div class="detail-value">${user.application_no}</div></div>
+                <div class="detail-row"><div class="detail-label">Student Name:</div><div class="detail-value">${user.full_name}</div></div>
+                <div class="detail-row"><div class="detail-label">Allotted Institute:</div><div class="detail-value">${data.institute_name}</div></div>
+                <div class="detail-row"><div class="detail-label">Allotted Program:</div><div class="detail-value">${data.program_name}</div></div>
+                <div class="detail-row"><div class="detail-label">Your Rank:</div><div class="detail-value">${data.allotted_rank || user.student_rank}</div></div>
+                <div class="detail-row"><div class="detail-label">Category:</div><div class="detail-value">${data.category || user.category}</div></div>
+                <div class="detail-row"><div class="detail-label">Document Verification Status:</div><div class="detail-value">${statusHtml}</div></div>
+                <div class="next-step">
+                    <strong>Next Steps:</strong><br>
+                    ${status === "Accepted" ? "✅ Your documents are verified. Please report to the institute as per schedule." :
+                            status === "Rejected" ? "❌ Your documents were rejected. Please upload the correct documents immediately." :
+                                "📄 Upload your documents for verification. After verification, you will receive further instructions."}
+                </div>
+            `;
+                    container.appendChild(div);
+                }
+                document.getElementById("loadingMsg").style.display = "none";
+                container.style.display = "block";
+            } catch (err) {
+                console.error(err);
+                document.getElementById("loadingMsg").innerHTML = "<p>Error loading allotment details. Please try again later.</p>";
+            }
+        }
+        loadAllotment();
+    </script>
+</body>
+
+</html>

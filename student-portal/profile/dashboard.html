@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .allotment-card {
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            margin-bottom: 20px;
+        }
+        .doc-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-verified {
+            background: #4CAF50;
+            color: white;
+        }
+        .status-pending {
+            background: #ff9800;
+            color: white;
+        }
+        .status-rejected {
+            background: #f44336;
+            color: white;
+        }
+        .info-message {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .action-grid{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            display: block;
+            text-align: center;
+            padding: 15px;
+            background: #f4f6f9;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: 0.3s;
+            border: 1px solid #ddd;
+        }
+
+        .action-btn.btn-allotment {
+            background: #ffb347;
+            color: #0a2b4e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">National Admission Portal</div>
+        <nav><a href="/logout">Logout</a></nav>
+    </header>
+    <section class="section">
+        <div class="card">
+            <h2>Welcome, <span id="name">Student</span></h2>
+            <p>Application Number: <b id="appNo">-</b></p>
+            <div id="lockStatus"></div>
+        </div>
+        <div id="allotmentCard" class="card allotment-card" style="display:none;">
+            <h3>🎯 Seat Allotment Details</h3>
+            <p><strong>Institute:</strong> <span id="allottedInstitute">-</span></p>
+            <p><strong>Program:</strong> <span id="allottedProgram">-</span></p>
+            <p><strong>Document Verification Status:</strong> <span id="docVerifStatus" class="doc-status">-</span></p>
+            <p id="verifRemark" style="color:#d32f2f; margin-top:5px;"></p>
+        </div>
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3>Your Rank</h3>
+                <div class="stat-value" id="rankDisplay">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Category</h3>
+                <div class="stat-value" id="categoryDisplay">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Choices Status</h3>
+                <div class="stat-value" id="choicesStatusDisplay">-</div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Personal Details</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Full Name</td>
+                        <td id="fullName">-</td>
+                    </tr>
+                    <tr>
+                        <td>Application Number</td>
+                        <td id="application">-</td>
+                    </tr>
+                    <tr>
+                        <td>Phone</td>
+                        <td id="phone">-</td>
+                    </tr>
+                    <tr>
+                        <td>Email</td>
+                        <td id="email">-</td>
+                    </tr>
+                    <tr>
+                        <td>Rank</td>
+                        <td id="rank">-</td>
+                    </tr>
+                    <tr>
+                        <td>Father's Name</td>
+                        <td id="father">-</td>
+                    </tr>
+                    <tr>
+                        <td>Mother's Name</td>
+                        <td id="mother">-</td>
+                    </tr>
+                    <tr>
+                        <td>Age</td>
+                        <td id="age">-</td>
+                    </tr>
+                    <tr>
+                        <td>Aadhar</td>
+                        <td id="aadhar">-</td>
+                    </tr>
+                    <tr>
+                        <td>State</td>
+                        <td id="state">-</td>
+                    </tr>
+                    <tr>
+                        <td>District</td>
+                        <td id="district">-</td>
+                    </tr>
+                    <tr>
+                        <td>Address</td>
+                        <td id="address">-</td>
+                    </tr>
+                    <tr>
+                        <td>Category</td>
+                        <td id="category">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h2>Quick Actions</h2>
+            <div class="action-grid" id="actionGrid"></div>
+        </div>
+    </section>
+    <footer>© 2026 National Admission Portal</footer>
+    <script>
+        async function loadDashboard(){
+            try{
+                console.log("Loading dashboard...");
+                const meRes = await fetch("/api/me");
+                if (meRes.status === 401) { alert("Please login first!"); window.location.href = "/login.html"; return; }
+                const user = await meRes.json();
+                if (!user) return;
+                document.getElementById("name").innerText = user.full_name || "-";
+                document.getElementById("appNo").innerText = user.application_no || "-";
+                document.getElementById("fullName").innerText = user.full_name || "-";
+                document.getElementById("application").innerText = user.application_no || "-";
+                document.getElementById("phone").innerText = user.phone || "-";
+                document.getElementById("email").innerText = user.email || "-";
+                document.getElementById("rank").innerText = user.student_rank || "-";
+                document.getElementById("father").innerText = user.father_name || "-";
+                document.getElementById("mother").innerText = user.mother_name || "-";
+                document.getElementById("age").innerText = user.age || "-";
+                document.getElementById("aadhar").innerText = user.aadhar || "-";
+                document.getElementById("state").innerText = user.state || "-";
+                document.getElementById("district").innerText = user.district || "-";
+                document.getElementById("address").innerText = user.address || "-";
+                document.getElementById("category").innerText = user.category || "-";
+                document.getElementById("rankDisplay").innerText = user.student_rank || "-";
+                document.getElementById("categoryDisplay").innerText = user.category || "-";
+                const hasChoicesRes = await fetch("/api/has-choices");
+                const hasChoicesData = await hasChoicesRes.json();
+                const hasChoices = hasChoicesData.hasChoices;
+                const lockStatusSpan = document.getElementById("lockStatus");
+                const choicesStatusDisplay = document.getElementById("choicesStatusDisplay");
+                if(hasChoices){
+                    lockStatusSpan.innerHTML = '<div class="success-box">✓ Your choices have been submitted and cannot be modified</div>';
+                    choicesStatusDisplay.innerHTML = '<span class="status-badge status-locked">Submitted ✓</span>';
+                }
+                else{
+                    lockStatusSpan.innerHTML = '<div class="warning-box">⚠️ You have not submitted your choices. Please fill and submit before the deadline.</div>';
+                    choicesStatusDisplay.innerHTML = '<span class="status-badge status-unlocked">Not Submitted ⚠️</span>';
+                }
+                const announceRes = await fetch("/api/allotment-announced");
+                const announceData = await announceRes.json();
+                const resultsAnnounced = announceData.announced;
+                console.log("Allotment announced:", resultsAnnounced);
+                let allotment = null;
+                if (resultsAnnounced) {
+                    const allotRes = await fetch("/api/allotment");
+                    allotment = await allotRes.json();
+                    console.log("Allotment data:", allotment);
+                    if (allotment.allotted) {
+                        document.getElementById("allotmentCard").style.display = "block";
+                        document.getElementById("allottedInstitute").innerText = allotment.institute_name;
+                        document.getElementById("allottedProgram").innerText = allotment.program_name;
+                        const statusSpan = document.getElementById("docVerifStatus");
+                        const remarkSpan = document.getElementById("verifRemark");
+                        const overallStatus = allotment.verification_status || "Pending";
+                        if (overallStatus === "Accepted") {
+                            statusSpan.innerText = "Verified ✓";
+                            statusSpan.className = "doc-status status-verified";
+                            remarkSpan.innerText = "";
+                        } else if (overallStatus === "Rejected") {
+                            statusSpan.innerText = "Rejected ✗";
+                            statusSpan.className = "doc-status status-rejected";
+                            remarkSpan.innerText = allotment.verification_remark || "Documents rejected. Please contact institute.";
+                        } else {
+                            statusSpan.innerText = "Pending";
+                            statusSpan.className = "doc-status status-pending";
+                        }
+                    }
+                }
+                const actionGrid = document.getElementById("actionGrid");
+                actionGrid.innerHTML = "";
+                if (resultsAnnounced) {
+                    const allotBtn = document.createElement('a');
+                    allotBtn.href = "/profile/allotment.html";
+                    allotBtn.className = "action-btn btn-allotment";
+                    allotBtn.innerHTML = `<strong>🎯 Seat Allotment Result</strong><br><small>View full allotment details</small>`;
+                    actionGrid.appendChild(allotBtn);
+                    if (allotment && allotment.allotted) {
+                        if (allotment.verification_status === "Accepted") {
+                            actionGrid.innerHTML = '<div class="success-box" style="text-align:center;">✅ Your documents have been verified. Admission process complete. Welcome to the institute!</div>';
+                        } else {
+                            const docRes = await fetch("/api/student/documents");
+                            const docs = await docRes.json();
+                            const hasUploaded = docs.length > 0;
+                            const hasRejected = docs.some(d => d.verification_status === "Rejected");
+                            console.log("Documents:", docs);
+
+                            if (!hasUploaded || hasRejected) {
+                                const uploadBtn = document.createElement('a');
+                                uploadBtn.href = "/profile/documentupload.html";
+                                uploadBtn.className = "action-btn";
+                                uploadBtn.innerHTML = `<strong>📄 Upload Documents</strong><br><small>Upload required certificates</small>`;
+                                actionGrid.appendChild(uploadBtn);
+                            } else {
+                                const msgDiv = document.createElement('div');
+                                msgDiv.className = "info-box";
+                                msgDiv.innerHTML = "📄 Your documents have been uploaded. Awaiting verification from institute.";
+                                actionGrid.appendChild(msgDiv);
+                            }
+                        }
+                    } else {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = "info-message";
+                        msgDiv.innerHTML = "⚠️ Allotment results have been announced, but you have not been allotted a seat in this round. Please check the allotment page for details or wait for further rounds.";
+                        actionGrid.appendChild(msgDiv);
+                    }
+                } else {
+                    if (!hasChoices) {
+                        const fillBtn = document.createElement('a');
+                        fillBtn.href = "/profile/choicefilling.html";
+                        fillBtn.className = "action-btn";
+                        fillBtn.innerHTML = `<strong>📝 Choice Filling</strong><br><small>Fill or modify your preferences</small>`;
+                        actionGrid.appendChild(fillBtn);
+                    }
+                    const viewBtn = document.createElement('a');
+                    viewBtn.href = "/profile/viewchoices.html";
+                    viewBtn.className = "action-btn";
+                    viewBtn.innerHTML = `<strong>👁️ View My Choices</strong><br><small>View your submitted preferences</small>`;
+                    actionGrid.appendChild(viewBtn);
+                }
+
+            }
+            catch (err) {
+                console.error("Dashboard error:", err);
+                document.getElementById("actionGrid").innerHTML = '<div class="error-box">Failed to load dashboard. Please refresh.</div>';
+            }
+        }
+        loadDashboard();
+    </script>
+</body>
+</html>
